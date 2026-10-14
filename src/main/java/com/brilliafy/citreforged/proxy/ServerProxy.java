@@ -1,4 +1,4 @@
-package com.eclipse.cit.proxy;
+package com.brilliafy.citreforged.proxy;
 
 import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 

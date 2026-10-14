@@ -1,6 +1,6 @@
-package com.eclipse.cit.parser;
+package com.brilliafy.citreforged.parser;
 
-import com.eclipse.cit.CITRecrafted;
+import com.brilliafy.citreforged.CITReforged;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.*;
 
@@ -14,8 +14,11 @@ import java.util.zip.ZipFile;
 public class CITParser {
     public static void load(List<IResourcePack> defaultPacks) {
         CITRegistry.clear();
+        if (com.brilliafy.citreforged.proxy.ClientProxy.proxyPackInstance != null) {
+            com.brilliafy.citreforged.proxy.ClientProxy.proxyPackInstance.clearCache();
+        }
 
-        List<IResourcePack> allPacks = new ArrayList<>(defaultPacks);
+        List<IResourcePack> allPacks = new ArrayList<>();
         for (ResourcePackRepository.Entry entry : Minecraft.getMinecraft().getResourcePackRepository().getRepositoryEntries()) {
             allPacks.add(entry.getResourcePack());
         }
@@ -45,17 +48,19 @@ public class CITParser {
                             ZipEntry entry = entries.nextElement();
                             String name = entry.getName();
                             if (name.endsWith(".properties") &&
-                                    (name.contains("/optifine/cit/") || name.contains("/mcpatcher/cit/"))) {
+                                    (name.contains("optifine/cit/") || name.contains("mcpatcher/cit/"))) {
+                                String pngEntryName = name.substring(0, name.length() - ".properties".length()) + ".png";
+                                boolean defaultPngExists = zip.getEntry(pngEntryName) != null;
                                 try (InputStream stream = zip.getInputStream(entry)) {
-                                    CITRule rule = parseRule(stream, name);
+                                    CITRule rule = parseRule(stream, name, defaultPngExists);
                                     if (rule != null) CITRegistry.register(rule);
                                 } catch (Exception e) {
-                                    CITRecrafted.LOGGER.error("Failed to parse CIT inside zip: {}", name, e);
+                                    CITReforged.LOGGER.error("Failed to parse CIT inside zip: {}", name, e);
                                 }
                             }
                         }
                     } catch (IOException e) {
-                        CITRecrafted.LOGGER.error("Failed to read resource pack zip: {}", file.getName(), e);
+                        CITReforged.LOGGER.error("Failed to read resource pack zip: {}", file.getName(), e);
                     }
                 }
             }
@@ -79,20 +84,27 @@ public class CITParser {
                     int assetsIndex = absolutePath.indexOf("assets/");
                     String relativePath = assetsIndex != -1 ? absolutePath.substring(assetsIndex) : absolutePath;
 
-                    CITRule rule = parseRule(stream, relativePath);
+                    String pngName = file.getName().substring(0, file.getName().length() - ".properties".length()) + ".png";
+                    boolean defaultPngExists = new File(file.getParentFile(), pngName).exists();
+
+                    CITRule rule = parseRule(stream, relativePath, defaultPngExists);
                     if (rule != null) CITRegistry.register(rule);
                 } catch (IOException e) {
-                    CITRecrafted.LOGGER.error("Failed to read CIT file: {}", file.getName(), e);
+                    CITReforged.LOGGER.error("Failed to read CIT file: {}", file.getName(), e);
                 }
             }
         }
     }
 
-    private static CITRule parseRule(InputStream stream, String filePath) throws IOException {
+    private static CITRule parseRule(InputStream stream, String filePath, boolean defaultPngExists) throws IOException {
         Properties properties = new Properties();
         properties.load(stream);
-        CITRule rule = new CITRule(properties, filePath);
+        CITRule rule = new CITRule(properties, filePath, defaultPngExists);
         if (rule.getTargetItems().isEmpty()) {
+            return null;
+        }
+        if (rule.getTexture() == null && rule.getModel() == null &&
+                rule.getBowPulling0() == null && rule.getFishingRodCast() == null) {
             return null;
         }
         return rule;

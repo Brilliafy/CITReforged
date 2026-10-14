@@ -1,7 +1,7 @@
-package com.eclipse.cit.parser;
+package com.brilliafy.citreforged.parser;
 
-import com.eclipse.cit.CITRecrafted;
-import com.eclipse.cit.util.CITPathResolver;
+import com.brilliafy.citreforged.CITReforged;
+import com.brilliafy.citreforged.util.CITPathResolver;
 import net.minecraft.client.renderer.block.model.IBakedModel;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.item.Item;
@@ -13,6 +13,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class CITRule {
+    public static final CITRule NO_MATCH = new CITRule();
+
     private final List<Item> targetItems = new ArrayList<>();
     private final Map<List<String>, Pattern> nbtConditions = new HashMap<>();
     private final List<Range> damageConditions = new ArrayList<>();
@@ -22,17 +24,29 @@ public class CITRule {
     private final List<Range> stackSizeConditions = new ArrayList<>();
     private ResourceLocation texture;
     private ResourceLocation model;
+    private ResourceLocation bowPulling0;
+    private ResourceLocation bowPulling1;
+    private ResourceLocation bowPulling2;
+    private ResourceLocation fishingRodCast;
     private int weight = 0;
     private IBakedModel bakedModel;
+    private IBakedModel bowPulling0Model;
+    private IBakedModel bowPulling1Model;
+    private IBakedModel bowPulling2Model;
+    private IBakedModel fishingRodCastModel;
     private final String path;
 
-    CITRule(Properties properties, String path) {
+    private CITRule() {
+        this.path = "";
+    }
+
+    public CITRule(Properties properties, String path, boolean defaultPngExists) {
         this.path = path;
 
         String type = properties.getProperty("type");
-        if (type == null) return;
+        if (type == null) type = "item";
         if (!type.equals("item")) {
-            CITRecrafted.LOGGER.warn("CIT Recrafted cannot currently load property types other than item, skipping type " + type);
+            CITReforged.LOGGER.warn("CIT Reforged cannot currently load property types other than item, skipping type " + type);
             return;
         }
 
@@ -44,11 +58,28 @@ public class CITRule {
 
         String texture = properties.getProperty("texture");
         if (texture == null) texture = properties.getProperty("tile");
+
+        String bowStandby = properties.getProperty("texture.bow_standby");
+        if (bowStandby == null) bowStandby = properties.getProperty("texture.standby");
+        if (bowStandby == null) bowStandby = properties.getProperty("model.bow_standby");
+        if (bowStandby == null) bowStandby = properties.getProperty("model.standby");
+
+        String rodUncast = properties.getProperty("texture.fishing_rod_uncast");
+        if (rodUncast == null) rodUncast = properties.getProperty("texture.uncast");
+
+        if (texture == null) {
+            if (bowStandby != null) {
+                texture = bowStandby;
+            } else if (rodUncast != null) {
+                texture = rodUncast;
+            }
+        }
+
         String model = properties.getProperty("model");
 
         if (texture != null) {
             this.texture = CITPathResolver.resolve(path, texture, ".png");
-        } else if (model == null) {
+        } else if (model == null && defaultPngExists) {
             String fileName = path.substring(path.lastIndexOf('/') + 1);
             this.texture = CITPathResolver.resolve(path, fileName, ".properties");
         }
@@ -57,9 +88,49 @@ public class CITRule {
             this.model = CITPathResolver.resolve(path, model, ".json", ".jpm");
         }
 
+        String pull0 = properties.getProperty("texture.bow_pulling_0");
+        if (pull0 == null) pull0 = properties.getProperty("texture.pulling_0");
+        if (pull0 == null) pull0 = properties.getProperty("model.bow_pulling_0");
+        if (pull0 == null) pull0 = properties.getProperty("model.pulling_0");
+        if (pull0 != null) {
+            this.bowPulling0 = CITPathResolver.resolve(path, pull0, ".png", ".json", ".jpm");
+        }
+
+        String pull1 = properties.getProperty("texture.bow_pulling_1");
+        if (pull1 == null) pull1 = properties.getProperty("texture.pulling_1");
+        if (pull1 == null) pull1 = properties.getProperty("model.bow_pulling_1");
+        if (pull1 == null) pull1 = properties.getProperty("model.pulling_1");
+        if (pull1 != null) {
+            this.bowPulling1 = CITPathResolver.resolve(path, pull1, ".png", ".json", ".jpm");
+        }
+
+        String pull2 = properties.getProperty("texture.bow_pulling_2");
+        if (pull2 == null) pull2 = properties.getProperty("texture.pulling_2");
+        if (pull2 == null) pull2 = properties.getProperty("model.bow_pulling_2");
+        if (pull2 == null) pull2 = properties.getProperty("model.pulling_2");
+        if (pull2 != null) {
+            this.bowPulling2 = CITPathResolver.resolve(path, pull2, ".png", ".json", ".jpm");
+        }
+
+        String rodCast = properties.getProperty("texture.fishing_rod_cast");
+        if (rodCast == null) rodCast = properties.getProperty("texture.cast");
+        if (rodCast == null) rodCast = properties.getProperty("model.fishing_rod_cast");
+        if (rodCast == null) rodCast = properties.getProperty("model.cast");
+        if (rodCast != null) {
+            this.fishingRodCast = CITPathResolver.resolve(path, rodCast, ".png", ".json", ".jpm");
+        }
+
+        CITRegistry.registerTexture(this.texture);
+        CITRegistry.registerTexture(this.bowPulling0);
+        CITRegistry.registerTexture(this.bowPulling1);
+        CITRegistry.registerTexture(this.bowPulling2);
+        CITRegistry.registerTexture(this.fishingRodCast);
+
         String stringWeight = properties.getProperty("weight");
         if (stringWeight != null) {
-            weight = Integer.parseInt(stringWeight);
+            try {
+                weight = Integer.parseInt(stringWeight);
+            } catch (NumberFormatException ignored) {}
         }
 
         String damage = properties.getProperty("damage");
@@ -73,7 +144,7 @@ public class CITRule {
             try {
                 tempMask = Integer.parseInt(damageMask);
             } catch (NumberFormatException e) {
-                CITRecrafted.LOGGER.warn("Properties file contains non-number value in damage mask condition");
+                CITReforged.LOGGER.warn("Properties file contains non-number value in damage mask condition");
             }
             damageMaskCondition = tempMask;
         }
@@ -82,12 +153,26 @@ public class CITRule {
         if (enchantments == null) enchantments = properties.getProperty("enchantmentIDs");
         if (enchantments != null) {
             for (String enchantStr : enchantments.trim().split("\\s+")) {
+                if (isNumeric(enchantStr)) {
+                    try {
+                        int numId = Integer.parseInt(enchantStr);
+                        Enchantment e = Enchantment.getEnchantmentByID(numId);
+                        if (e != null) {
+                            ResourceLocation regName = Enchantment.REGISTRY.getNameForObject(e);
+                            if (regName != null) {
+                                enchantmentConditions.add(Pattern.compile(Pattern.quote(regName.toString())));
+                                enchantmentConditions.add(Pattern.compile(Pattern.quote(regName.getPath())));
+                                continue;
+                            }
+                        }
+                    } catch (NumberFormatException ignored) {}
+                }
                 enchantmentConditions.add(evaluatePattern(enchantStr));
             }
         }
 
         String enchantmentLevels = properties.getProperty("enchantmentLevels");
-        if (enchantments != null && enchantmentLevels != null) {
+        if (enchantmentLevels != null) {
             enchantmentLevelConditions.addAll(Range.fromList(Arrays.asList(enchantmentLevels.trim().split("\\s+"))));
         }
 
@@ -105,14 +190,8 @@ public class CITRule {
     }
 
     public boolean matches(ItemStack stack) {
-        if (!this.nbtConditions.isEmpty()) {
-            NBTTagCompound root = stack.getTagCompound();
-            if (root == null) return false;
-            for (Map.Entry<List<String>, Pattern> entry : this.nbtConditions.entrySet()) {
-                if (!checkNBTCondition(root, entry.getKey(), entry.getValue())) {
-                    return false;
-                }
-            }
+        if (!this.stackSizeConditions.isEmpty()) {
+            if (!evaluateStackSizeConditions(stack.getCount())) return false;
         }
 
         if (!this.damageConditions.isEmpty()) {
@@ -123,22 +202,32 @@ public class CITRule {
             }
         }
 
-        NBTTagList enchants = stack.getItem() == net.minecraft.init.Items.ENCHANTED_BOOK
-                ? net.minecraft.item.ItemEnchantedBook.getEnchantments(stack)
-                : stack.getEnchantmentTagList();
-
-        if (!this.enchantmentConditions.isEmpty()) {
+        if (!this.enchantmentConditions.isEmpty() || !this.enchantmentLevelConditions.isEmpty()) {
+            NBTTagList enchants = stack.getItem() == net.minecraft.init.Items.ENCHANTED_BOOK
+                    ? net.minecraft.item.ItemEnchantedBook.getEnchantments(stack)
+                    : stack.getEnchantmentTagList();
+            if (enchants == null || enchants.tagCount() == 0) return false;
             if (!evaluateEnchantmentConditions(enchants)) return false;
         }
 
-        if (!this.enchantmentLevelConditions.isEmpty()) {
-            if (!evaluateEnchantmentLevelConditions(enchants)) return false;
+        if (!this.nbtConditions.isEmpty()) {
+            NBTTagCompound root = stack.getTagCompound();
+            if (root == null) return false;
+            for (Map.Entry<List<String>, Pattern> entry : this.nbtConditions.entrySet()) {
+                if (!checkNBTCondition(root, entry.getKey(), entry.getValue())) {
+                    return false;
+                }
+            }
         }
 
-        if (!this.stackSizeConditions.isEmpty()) {
-            if (!evaluateStackSizeConditions(stack.getCount())) return false;
-        }
+        return true;
+    }
 
+    private static boolean isNumeric(String str) {
+        if (str == null || str.isEmpty()) return false;
+        for (int i = 0; i < str.length(); i++) {
+            if (!Character.isDigit(str.charAt(i))) return false;
+        }
         return true;
     }
 
@@ -156,7 +245,7 @@ public class CITRule {
                 patterns.add(Pattern.compile(itemStr.substring(8).replace("*", ".*").replace("?", ".")));
             } else {
                 Item parsedItem;
-                if (itemStr.matches("\\d+")) {
+                if (isNumeric(itemStr)) {
                     parsedItem = Item.getItemById(Integer.parseInt(itemStr));
                 } else {
                     if (!itemStr.contains(":")) {
@@ -167,7 +256,7 @@ public class CITRule {
                 if (parsedItem != null) {
                     targetItems.add(parsedItem);
                 } else {
-                    CITRecrafted.LOGGER.warn("Unknown item '{}' in {}", itemStr, path);
+                    CITReforged.LOGGER.warn("Unknown item '{}' in {}", itemStr, path);
                 }
             }
         }
@@ -182,13 +271,28 @@ public class CITRule {
             }
         }
     }
+
     private boolean evaluateDamageConditions(int damage, int maxDamage) {
         for (Range range : damageConditions) {
             if (range.compare(damage, maxDamage)) return true;
         }
         return false;
     }
+
     private boolean evaluateEnchantmentConditions(NBTTagList enchants) {
+        if (enchants == null || enchants.tagCount() == 0) return false;
+
+        if (enchantmentConditions.isEmpty()) {
+            if (enchantmentLevelConditions.isEmpty()) return true;
+            for (int i = 0; i < enchants.tagCount(); i++) {
+                int lvl = enchants.getCompoundTagAt(i).getInteger("lvl");
+                for (Range range : enchantmentLevelConditions) {
+                    if (range.compare(lvl, 0)) return true;
+                }
+            }
+            return false;
+        }
+
         for (Pattern pattern : enchantmentConditions) {
             boolean match = false;
             for (int i = 0; i < enchants.tagCount(); i++) {
@@ -197,27 +301,35 @@ public class CITRule {
                 if (id.isEmpty()) {
                     short numID = enchantment.getShort("id");
                     Enchantment e = Enchantment.getEnchantmentByID(numID);
-                    if (e != null) id = Enchantment.REGISTRY.getNameForObject(e).toString();
+                    if (e != null) {
+                        ResourceLocation rloc = Enchantment.REGISTRY.getNameForObject(e);
+                        if (rloc != null) id = rloc.toString();
+                    }
                 }
-                if (pattern.matcher(id).matches() || (id.contains(":") && pattern.matcher(id.split(":")[1]).matches())) {
-                    match = true;
-                    break;
+                int colonIdx = id.indexOf(':');
+                String idPath = colonIdx != -1 ? id.substring(colonIdx + 1) : id;
+                boolean idMatches = pattern.matcher(id).matches() || (!idPath.equals(id) && pattern.matcher(idPath).matches());
+                if (idMatches) {
+                    if (enchantmentLevelConditions.isEmpty()) {
+                        match = true;
+                        break;
+                    } else {
+                        int lvl = enchantment.getInteger("lvl");
+                        for (Range range : enchantmentLevelConditions) {
+                            if (range.compare(lvl, 0)) {
+                                match = true;
+                                break;
+                            }
+                        }
+                        if (match) break;
+                    }
                 }
             }
             if (!match) return false;
         }
         return true;
     }
-    private boolean evaluateEnchantmentLevelConditions(NBTTagList enchantments) {
-        for (int i = 0; i < enchantments.tagCount(); i++) {
-            NBTTagCompound enchantment = enchantments.getCompoundTagAt(i);
-            int lvl = enchantment.getInteger("lvl");
-            for (Range range : enchantmentLevelConditions) {
-                if (range.compare(lvl, 0)) return true;
-            }
-        }
-        return false;
-    }
+
     private boolean evaluateStackSizeConditions(int stackSize) {
         for (Range range : stackSizeConditions) {
             if (range.compare(stackSize, 0)) return true;
@@ -226,6 +338,7 @@ public class CITRule {
     }
 
     private static int evaluatePercentage(int percentage, int max) { return max * percentage / 100; }
+
     private Pattern evaluatePattern(String value) {
         if (value.startsWith("iregex:")) {
             return Pattern.compile(value.substring(7), Pattern.CASE_INSENSITIVE);
@@ -258,7 +371,7 @@ public class CITRule {
                     this.b = this.a;
                 }
             } catch (NumberFormatException e) {
-                CITRecrafted.LOGGER.error("Malformed range: {}", rangeStr);
+                CITReforged.LOGGER.error("Malformed range: {}", rangeStr);
             }
         }
 
@@ -268,8 +381,9 @@ public class CITRule {
             }
             return x >= a && x <= b;
         }
+
         public static List<Range> fromList(List<String> list) {
-            List<Range> ranges = new ArrayList<>();
+            List<Range> ranges = new ArrayList<>(list.size());
             for (String s : list) {
                 ranges.add(new Range(s));
             }
@@ -293,22 +407,23 @@ public class CITRule {
         NBTBase leaf = getChildTag(current, leafKey);
         return leaf != null && pattern.matcher(getNBTValueAsString(leaf)).matches();
     }
+
     private NBTBase getChildTag(NBTBase current, String key) {
         if (current instanceof NBTTagCompound comp) {
-            return comp.hasKey(key) ? comp.getTag(key) : null;
+            return comp.getTag(key);
         }
         if (current instanceof NBTTagList list) {
-            try {
+            if (isNumeric(key)) {
                 int index = Integer.parseInt(key);
                 if (index >= 0 && index < list.tagCount()) {
                     return list.get(index);
                 }
-            } catch (NumberFormatException e) {
-                return null;
             }
+            return null;
         }
         return null;
     }
+
     private String getNBTValueAsString(NBTBase tag) {
         if (tag instanceof NBTTagString nbtString) {
             return nbtString.getString();
@@ -324,8 +439,20 @@ public class CITRule {
     public List<Item> getTargetItems() { return targetItems; }
     public ResourceLocation getTexture() { return texture; }
     public ResourceLocation getModel() { return model; }
+    public ResourceLocation getBowPulling0() { return bowPulling0; }
+    public ResourceLocation getBowPulling1() { return bowPulling1; }
+    public ResourceLocation getBowPulling2() { return bowPulling2; }
+    public ResourceLocation getFishingRodCast() { return fishingRodCast; }
     public int getWeight() { return weight; }
     public IBakedModel getBakedModel() { return bakedModel; }
     public void setBakedModel(IBakedModel bakedModel) { this.bakedModel = bakedModel; }
+    public IBakedModel getBowPulling0Model() { return bowPulling0Model; }
+    public void setBowPulling0Model(IBakedModel bowPulling0Model) { this.bowPulling0Model = bowPulling0Model; }
+    public IBakedModel getBowPulling1Model() { return bowPulling1Model; }
+    public void setBowPulling1Model(IBakedModel bowPulling1Model) { this.bowPulling1Model = bowPulling1Model; }
+    public IBakedModel getBowPulling2Model() { return bowPulling2Model; }
+    public void setBowPulling2Model(IBakedModel bowPulling2Model) { this.bowPulling2Model = bowPulling2Model; }
+    public IBakedModel getFishingRodCastModel() { return fishingRodCastModel; }
+    public void setFishingRodCastModel(IBakedModel fishingRodCastModel) { this.fishingRodCastModel = fishingRodCastModel; }
     public String getPath() { return path; }
 }
