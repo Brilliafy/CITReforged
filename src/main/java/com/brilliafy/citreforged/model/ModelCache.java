@@ -1,4 +1,4 @@
-package com.eclipse.cit.model;
+package com.brilliafy.citreforged.model;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

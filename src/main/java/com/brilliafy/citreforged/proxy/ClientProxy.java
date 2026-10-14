@@ -1,7 +1,7 @@
-package com.eclipse.cit.proxy;
+package com.brilliafy.citreforged.proxy;
 
-import com.eclipse.cit.CITProxyPack;
-import com.eclipse.cit.CITRecrafted;
+import com.brilliafy.citreforged.CITProxyPack;
+import com.brilliafy.citreforged.CITReforged;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.IResourceManager;
 import net.minecraft.client.resources.IResourcePack;
@@ -13,6 +13,7 @@ import java.util.List;
 
 public class ClientProxy implements IProxy {
     public static List<IResourcePack> defaultPacks;
+    public static CITProxyPack proxyPackInstance;
 
     @Override
     public void preInit(FMLPreInitializationEvent event) {
@@ -22,14 +23,14 @@ public class ClientProxy implements IProxy {
                     Minecraft.getMinecraft(),
                     "field_110449_ao"
             );
-            CITProxyPack proxyPack = new CITProxyPack(defaultPacks);
+            proxyPackInstance = new CITProxyPack(defaultPacks);
             IResourceManager manager = Minecraft.getMinecraft().getResourceManager();
             if (manager instanceof SimpleReloadableResourceManager) {
-                ((SimpleReloadableResourceManager) manager).reloadResourcePack(proxyPack);
+                ((SimpleReloadableResourceManager) manager).reloadResourcePack(proxyPackInstance);
             }
-            defaultPacks.add(proxyPack);
+            defaultPacks.add(proxyPackInstance);
         } catch (Exception e) {
-            CITRecrafted.LOGGER.error("Failed to inject CIT Proxy Pack into default list!", e);
+            CITReforged.LOGGER.error("Failed to inject CIT Proxy Pack into default list!", e);
         }
     }
 }

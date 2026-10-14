@@ -1,6 +1,9 @@
-package com.eclipse.cit.util;
+package com.brilliafy.citreforged.util;
 
 import net.minecraft.util.ResourceLocation;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public final class CITPathResolver {
     private CITPathResolver() {}
@@ -22,15 +25,22 @@ public final class CITPathResolver {
                 cleaned.contains(":");
 
         if (isAbsolute) {
-            if (cleaned.startsWith("~/")) cleaned = cleaned.substring(2);
+            if (cleaned.startsWith("~/")) {
+                String citRoot = (basePath != null && basePath.contains("mcpatcher/")) ? "mcpatcher/" : "optifine/";
+                cleaned = citRoot + cleaned.substring(2);
+            }
             if (cleaned.startsWith("/")) cleaned = cleaned.substring(1);
         } else {
             if (cleaned.startsWith("./")) {
                 cleaned = cleaned.substring(2);
             }
-            String dir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
-            cleaned = dir + cleaned;
+            if (basePath != null && basePath.contains("/")) {
+                String dir = basePath.substring(0, basePath.lastIndexOf('/') + 1);
+                cleaned = dir + cleaned;
+            }
         }
+
+        cleaned = normalizePath(cleaned);
 
         String namespace = "minecraft";
         if (cleaned.startsWith("assets/")) {
@@ -52,5 +62,21 @@ public final class CITPathResolver {
         }
 
         return new ResourceLocation(namespace, cleaned);
+    }
+
+    private static String normalizePath(String path) {
+        String[] parts = path.split("/");
+        List<String> list = new ArrayList<>();
+        for (String p : parts) {
+            if (p.isEmpty() || p.equals(".")) continue;
+            if (p.equals("..")) {
+                if (!list.isEmpty()) {
+                    list.remove(list.size() - 1);
+                }
+            } else {
+                list.add(p);
+            }
+        }
+        return String.join("/", list);
     }
 }
