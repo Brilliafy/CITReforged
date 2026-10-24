@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CIT Reforged v1.0.0 Release Announcement</title>
+  <style>
+    :root {
+      --bg-dark: #0f141c;
+      --card-bg: #18202c;
+      --card-border: #283548;
+      --accent-cyan: #00e5ff;
+      --accent-emerald: #10b981;
+      --accent-purple: #a855f7;
+      --accent-orange: #f59e0b;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.6;
+      padding: 32px 16px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      max-width: 860px;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.45);
+      overflow: hidden;
+    }
+
+    .header-banner {
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 50%, #0369a1 100%);
+      padding: 40px 32px;
+      border-bottom: 1px solid var(--card-border);
+      position: relative;
+    }
+
+    .badge-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .badge-mc { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); }
+    .badge-ver { background: rgba(0, 229, 255, 0.2); color: #38bdf8; border: 1px solid rgba(0, 229, 255, 0.4); }
+    .badge-forge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.4); }
+    .badge-perf { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.4); }
+
+    .title {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+      background: linear-gradient(to right, #ffffff, #e0f2fe, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 680px;
+    }
+
+    .content {
+      padding: 32px;
+    }
+
+    .lead-box {
+      background: rgba(15, 23, 42, 0.6);
+      border-left: 4px solid var(--accent-cyan);
+      border-radius: 0 10px 10px 0;
+      padding: 16px 20px;
+      margin-bottom: 28px;
+      font-size: 15px;
+      color: #cbd5e1;
+    }
+
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin: 32px 0 16px 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 8px;
+    }
+
+    .grid-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .feature-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 18px 20px;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .feature-card:hover {
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+    }
+
+    .feature-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-card p {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .feature-tag {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: #374151;
+      color: #9ca3af;
+      margin-left: auto;
+    }
+
+    .comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      font-size: 14px;
+      background: #111827;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid #1f2937;
+    }
+
+    .comparison-table th, .comparison-table td {
+      padding: 12px 16px;
+      text-align: left;
+    }
+
+    .comparison-table th {
+      background: #1e293b;
+      color: #e2e8f0;
+      font-weight: 600;
+      border-bottom: 1px solid #334155;
+    }
+
+    .comparison-table tr:not(:last-child) td {
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .status-ok { color: #34d399; font-weight: 700; }
+    .status-warn { color: #fbbf24; font-weight: 600; }
+    .status-bad { color: #f87171; font-weight: 600; }
+
+    .credit-box {
+      margin-top: 32px;
+      background: linear-gradient(180deg, #1e293b 0%, #151d2c 100%);
+      border: 1px solid #334155;
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+
+    .credit-box h3 {
+      font-size: 16px;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+
+    .credit-box p {
+      font-size: 14px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .credit-box a {
+      color: var(--accent-cyan);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .credit-box a:hover {
+      text-decoration: underline;
+    }
+
+    .action-row {
+      margin-top: 28px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 22px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: #ffffff;
+      border: 1px solid #38bdf8;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.4);
+    }
+
+    .btn-secondary {
+      background: #1e293b;
+      color: #cbd5e1;
+      border: 1px solid #334155;
+    }
+
+    .btn-secondary:hover {
+      background: #334155;
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <div class="header-banner">
+      <div class="badge-bar">
+        <span class="badge badge-mc">Minecraft 1.12.2</span>
+        <span class="badge badge-forge">Forge & Cleanroom</span>
+        <span class="badge badge-ver">v1.0.0 Release</span>
+        <span class="badge badge-perf">Zero GC Stutter</span>
+      </div>
+      <h1 class="title">CIT Reforged v1.0.0</h1>
+      <p class="subtitle">The optimized, standalone Custom Item Textures engine for Minecraft 1.12.2. Full OptiFine & MCPatcher CIT resource pack support without OptiFine installed.</p>
+    </div>
+
+    <div class="content">
+      <div class="lead-box">
+        🚀 <strong>Why this release matters:</strong> OptiFine causes frequent incompatibilities and memory crashes in modern 1.12.2 modpacks running performance mods like CensoredASM, VintageFix, or CleanroomMC. <strong>CIT Reforged</strong> solves this by loading all custom weapons, tools, armors, and items standalone with zero rendering allocations and complete OptiFine CIT feature parity.
+      </div>
+
+      <h2>⚡ Key Upgrades Over Original CIT-Recrafted</h2>
+      <div class="grid-features">
+        <div class="feature-card">
+          <h3>🏎️ Zero-Allocation Rendering <span class="feature-tag">Performance</span></h3>
+          <p>CIT-Recrafted allocated a new cache key and deep-copied item NBT tags on <em>every single frame</em> for every rendered item. CIT Reforged introduces recyclable <code>ThreadLocal</code> lookup keys with precomputed hashes and an LRU model cache, eliminating GC stutters completely.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>🏹 Dynamic Bow & Fishing Rod Models <span class="feature-tag">Visuals</span></h3>
+          <p>Full support for OptiFine dynamic animations! Custom bows now correctly transition through pulling stages (<code>pulling_0</code>, <code>pulling_1</code>, <code>pulling_2</code>), and fishing rods switch seamlessly when cast or uncast.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>📖 Enchanted Books Support <span class="feature-tag">Bug Fix</span></h3>
+          <p>Enchanted books store their enchantments under <code>StoredEnchantments</code> rather than standard <code>ench</code> tags. CIT Reforged handles both tags natively so enchantment-based book textures render properly.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>✨ Emissives & Animation Metadata <span class="feature-tag">Compatibility</span></h3>
+          <p>Proper proxying and registration of OptiFine emissive <code>_e.png</code> textures and custom <code>.mcmeta</code> animation files. CIT packs with glowing runes and pulsing animations now work out-of-the-box.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>📁 Universal Root-Level ZIP Discovery <span class="feature-tag">Packs</span></h3>
+          <p>Resource packs that bundle CIT folders directly at the root level of the ZIP file (such as legacy MCPatcher packs) are now detected and loaded without requiring manual repackaging.</p>
+        </div>
+
+        <div class="feature-card">
+          <h3>🎯 3D Perspective Preservation <span class="feature-tag">Rendering</span></h3>
+          <p>Integrated <code>PerspectiveModelWrapper</code> ensures custom models adhere to proper camera transformations across First-Person, Third-Person, GUI, Ground, and Fixed item perspectives.</p>
+        </div>
+      </div>
+
+      <h2>📊 Head-to-Head Comparison</h2>
+      <table class="comparison-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Original CIT-Recrafted</th>
+            <th>CIT Reforged (New)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Memory Overhead & GC Churn</strong></td>
+            <td><span class="status-bad">Heavy</span> (NBT copied per frame)</td>
+            <td><span class="status-ok">Zero-Allocation</span> (ThreadLocal reused)</td>
+          </tr>
+          <tr>
+            <td><strong>Rule Evaluation Speed</strong></td>
+            <td><span class="status-warn">Linear Scan</span> every tick</td>
+            <td><span class="status-ok">O(1)</span> LRU Rule Cache</td>
+          </tr>
+          <tr>
+            <td><strong>Bow Pulling Animations</strong></td>
+            <td><span class="status-bad">Unsupported</span> (Static only)</td>
+            <td><span class="status-ok">Full Support</span> (3 pulling stages)</td>
+          </tr>
+          <tr>
+            <td><strong>Fishing Rod Cast States</strong></td>
+            <td><span class="status-bad">Unsupported</span></td>
+            <td><span class="status-ok">Full Support</span> (Dynamic Hook check)</td>
+          </tr>
+          <tr>
+            <td><strong>Enchanted Books</strong></td>
+            <td><span class="status-bad">Broken</span> (Misses StoredEnchants)</td>
+            <td><span class="status-ok">Fully Supported</span></td>
+          </tr>
+          <tr>
+            <td><strong>Root-level ZIP Packs</strong></td>
+            <td><span class="status-bad">Ignored / Failed</span></td>
+            <td><span class="status-ok">Auto-Discovered & Proxied</span></td>
+          </tr>
+          <tr>
+            <td><strong>Emissive Textures (_e.png)</strong></td>
+            <td><span class="status-bad">Ignored</span></td>
+            <td><span class="status-ok">Registered for shaders</span></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="credit-box">
+        <h3>❤️ Credits & Attribution</h3>
+        <p>CIT Reforged is built upon the foundational work of <strong>EclipsedReaper</strong>, creator of the original <a href="https://github.com/EclipsedReaper/CIT-Recrafted" target="_blank" rel="noopener">CIT-Recrafted</a> project. CIT Reforged continues this work under the terms of the open-source MIT License.</p>
+        <p style="margin-top: 8px;">Upstream Repository: <a href="https://github.com/EclipsedReaper/CIT-Recrafted" target="_blank" rel="noopener">https://github.com/EclipsedReaper/CIT-Recrafted</a></p>
+      </div>
+
+      <div class="action-row">
+        <a href="https://github.com/EclipsedReaper/CIT-Recrafted" target="_blank" rel="noopener" class="btn btn-secondary">⭐ Upstream Original</a>
+        <a href="https://github.com/Brilliafy/CITReforged" target="_blank" rel="noopener" class="btn btn-primary">📦 Visit Fork on GitHub</a>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
