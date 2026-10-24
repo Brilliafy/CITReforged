@@ -4,49 +4,49 @@
 ![Modloader](https://img.shields.io/badge/Modloader-Forge%20%7C%20Cleanroom-orange.svg?style=for-the-badge)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)
 
-**CIT Reforged** is a high-performance, standalone **Custom Item Textures (CIT)** engine for **Minecraft 1.12.2** (Forge & Cleanroom). It provides 100% native support for OptiFine and MCPatcher CIT resource packs **without requiring OptiFine to be installed**.
+**CIT Reforged** is a high-performance, standalone **Custom Item Textures (CIT)** engine for **Minecraft 1.12.2** (supporting both Minecraft Forge and CleanroomMC). It provides 100% native support for OptiFine and MCPatcher CIT resource packs **without requiring OptiFine to be installed**.
 
-If you run modern 1.12.2 optimization mods (such as CensoredASM, VintageFix, Phosphor, FoamFix, or CleanroomMC) where OptiFine causes crashes, visual glitches, or massive memory overhead, **CIT Reforged** is the drop-in replacement that lets you enjoy all your favorite custom weapon, tool, armor, and item skins at maximum frame rates.
+If you play modern 1.12.2 modpacks using optimization mods (such as CensoredASM, VintageFix, Phosphor, FoamFix, or CleanroomMC) where OptiFine causes crashes, visual glitches, or massive memory overhead, **CIT Reforged** is the drop-in replacement that lets you enjoy all your favorite custom weapon, tool, armor, and item skins at maximum frame rates.
 
 ---
 
-## 🌟 Why CIT Reforged? (What Makes It Better)
+## 🌟 Differences Between Fork (CIT-Reforged) and Original (CIT-Recrafted)
 
-While the original [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted) proved that standalone CIT rendering on 1.12.2 was possible, it suffered from severe rendering stutter, missing OptiFine features, and pack compatibility bugs. 
+**CIT Reforged** is an optimized continuation of [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted) by EclipsedReaper. While the original proved that standalone CIT rendering on 1.12.2 was viable, it suffered from severe rendering stutter, missing OptiFine features, and pack compatibility bugs. 
 
-**CIT Reforged** completely overhauls the internal architecture:
+**CIT Reforged** overhauls the internal architecture with several key benefits:
 
 ### ⚡ 1. Zero-Allocation Rendering Engine (No Micro-Stutters)
-- **Garbage Collection Elimination:** The original mod allocated a new `ItemCacheKey` and performed a full deep-copy (`.copy()`) of every item's `NBTTagCompound` on **every single frame** for **every item rendered**. In busy inventories, hotbars, or modpacks with item frames, this caused constant garbage collection pauses.
-- **ThreadLocal Reset Lookups:** CIT Reforged replaces this with reusable `ThreadLocal` lookup keys that reset in-place with zero memory allocation and zero NBT cloning.
-- **Precomputed Hashes & LRU Rule Cache:** Matching rules are cached in an LRU model cache (`ModelCache(500)`). Once a stack's conditions (durability, NBT, count, enchantments) are verified, subsequent frames look up the model in constant $O(1)$ time.
+- **The Problem:** The original mod instantiated a new `ItemCacheKey` and performed a full deep-copy (`stack.getTagCompound().copy()`) of every item's entire NBT compound on **every single frame** for **every item rendered**. In busy inventories, hotbars, or modpacks with item frames, this caused constant garbage collection pauses.
+- **The Fix:** CIT Reforged replaces this with recyclable `ThreadLocal` lookup keys that reset in-place with zero memory allocation and zero NBT cloning.
+- **LRU Rule Cache:** Matching rules are cached in an LRU model cache (`ModelCache(500)`). Once a stack's conditions (durability, NBT, count, enchantments) are verified, subsequent frames look up the model in constant $O(1)$ time.
 
 ### 🏹 2. Dynamic Bow Pulling & Fishing Rod Cast Models
-- **Full Animation Support:** The original mod only supported static item models; custom bows and fishing rods were completely static or broken.
-- **OptiFine Specification Parity:** CIT Reforged introduces full support for:
+- **The Problem:** The original mod only supported static item models; custom bows and fishing rods were completely static or broken.
+- **The Fix:** CIT Reforged introduces full OptiFine specification parity for dynamic animations:
   - `texture.bow_pulling_0`, `texture.bow_pulling_1`, `texture.bow_pulling_2` (and model variants)
   - `texture.fishing_rod_cast` (and uncast variants)
   - Real-time player animation tracking (hand use duration and active bobber hook state).
   - Proper 3D camera perspective transformations (`PerspectiveModelWrapper`) so models look identical in First-Person, Third-Person, GUI, and on the ground.
 
 ### 📚 3. Enchanted Book Support (`StoredEnchantments`)
-- Legacy CIT mods only checked the item's `ench` tag. This caused enchantment-based CIT rules to fail on Enchanted Books.
-- CIT Reforged natively inspects both `ench` and `StoredEnchantments`, allowing packs that reskin enchanted books based on their specific enchantment and level to work flawlessly.
+- **The Problem:** The original mod only checked the item's `ench` tag. Because Minecraft stores enchanted book enchantments under `StoredEnchantments`, enchantment-based CIT rules failed on Enchanted Books.
+- **The Fix:** CIT Reforged natively inspects both `ench` and `StoredEnchantments`, allowing packs that reskin enchanted books based on their specific enchantment and level to work flawlessly.
 
-### 💡 4. Emissive Textures (`_e`) & Animation Metadata (`.mcmeta`)
-- Support for OptiFine emissive texture layers (`_e.png`).
+### 💡 4. Emissive Textures (`_e.png`) & Animation Metadata (`.mcmeta`)
+- Support for OptiFine emissive texture layers (`_e.png`) so glowing textures render properly alongside modern shaders and CTM.
 - Fully proxies `.mcmeta` texture animation files, ensuring custom animated CIT items cycle frames as intended.
 
-### 📦 5. Universal Resource Pack Compatibility & Path Resolution
+### 📦 5. Universal Pack Loading & Path Resolution
 - **Root-Level CIT Support:** Fixes a major bug where zip packs placing CIT folders at the root directory (`optifine/cit/...` or `mcpatcher/cit/...`) instead of nested under `assets/minecraft/` failed to load.
 - **Universal Path Resolver:** Accurately resolves relative paths (`./`), parent directories (`../`), absolute paths (`~/` expanding to `optifine/` or `mcpatcher/`), and case-insensitive file references.
 - **Model Deduplication:** Automatically caches and shares baked models across duplicate rules, dramatically lowering loading times and VRAM footprint in heavy packs (such as Conquest or John Smith).
 
 ---
 
-## 📊 Feature Comparison
+## 📊 Feature Comparison Matrix
 
-| Feature | Vanilla / OptiFine 1.12.2 | Original CIT-Recrafted | CIT Reforged (This Mod) |
+| Feature | Vanilla / OptiFine 1.12.2 | Original CIT-Recrafted | CIT Reforged (This Fork) |
 | :--- | :---: | :---: | :---: |
 | **Standalone (No OptiFine Needed)** | ❌ (Requires OptiFine) | ✅ Yes | ✅ **Yes** |
 | **Cleanroom & Modern Modpack Support** | ❌ Incompatible / Crash-prone | ✅ Yes | ✅ **Flawless (Forge + Cleanroom)** |
@@ -58,6 +58,7 @@ While the original [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recraft
 | **Emissive Textures (`_e.png`)** | ✅ Yes | ❌ Ignored | ✅ **Registered & Proxied** |
 | **Animated `.mcmeta` Files** | ✅ Yes | ⚠️ Partial | ✅ **Full support** |
 | **Root-Folder ZIP Pack Discovery** | ✅ Yes | ❌ Broken | ✅ **Fixed & Supported** |
+| **Model Bake Deduplication** | ❌ No | ❌ No | ⚡ **Unified Bake Cache** |
 
 ---
 
