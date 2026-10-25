@@ -1,130 +1,266 @@
-# CIT Reforged
+<div align="center">
 
-![CIT Reforged](logo.png)
+  <img src="logo.png" alt="CIT Reforged Logo" width="160" />
 
-![Minecraft Version](https://img.shields.io/badge/Minecraft-1.12.2-success?style=for-the-badge)
-![Modloader](https://img.shields.io/badge/Modloader-Forge%20%7C%20Cleanroom-orange?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+  # CIT Reforged
 
-**CIT Reforged** is an optimized, standalone **Custom Item Textures (CIT)** engine for **Minecraft 1.12.2** (Forge and CleanroomMC). It renders OptiFine and MCPatcher CIT resource packs natively **without OptiFine installed**.
+  <p><strong>A high-performance, zero-allocation Custom Item Textures (CIT) engine for Minecraft 1.12.2.</strong></p>
+  <p><em>Native OptiFine and MCPatcher CIT resource pack support — completely standalone, no OptiFine required.</em></p>
 
-In modern 1.12.2 performance environments (running mods like CleanroomMC, CensoredASM, VintageFix, Phosphor, or FoamFix), OptiFine frequently causes visual glitches, shader conflicts, or severe crashes. **CIT Reforged** serves as a direct drop-in replacement that brings complete CIT resource pack support to your game with zero rendering overhead.
+  <p>
+    <a href="https://github.com/Brilliafy/CITReforged/releases"><img src="https://img.shields.io/github/v/release/Brilliafy/CITReforged?color=00e5ff&style=for-the-badge&logo=github&label=Release" alt="Latest Release" /></a>
+    <img src="https://img.shields.io/badge/Minecraft-1.12.2-22c55e?style=for-the-badge&logo=curseforge&logoColor=white" alt="Minecraft 1.12.2" />
+    <img src="https://img.shields.io/badge/Loader-Forge%20%7C%20Cleanroom-f59e0b?style=for-the-badge" alt="Forge & Cleanroom" />
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-3b82f6?style=for-the-badge" alt="MIT License" /></a>
+  </p>
+
+  <p>
+    <a href="#-about-the-project">About</a> •
+    <a href="#-key-features">Features</a> •
+    <a href="#-fork-improvements--benefits">Why CIT Reforged?</a> •
+    <a href="#-comparison-matrix">Comparison</a> •
+    <a href="#-supported-properties">Supported Properties</a> •
+    <a href="#-installation">Installation</a> •
+    <a href="#-credits--acknowledgments">Credits</a>
+  </p>
+
+</div>
 
 ---
 
-## ⚖️ Differences Between Fork (CIT-Reforged) and Original (CIT-Recrafted)
+> [!NOTE]
+> **Why Standalone CIT?**
+> OptiFine 1.12.2 frequently crashes or causes rendering artifacts when paired with modern optimization mods (such as **CleanroomMC**, **CensoredASM**, **VintageFix**, **Phosphor**, and **FoamFix**). **CIT Reforged** is an optimized, drop-in replacement that lets you render custom weapons, tools, armors, and items from OptiFine/MCPatcher packs with smooth framerates and zero garbage collection overhead.
 
-**CIT Reforged** is an optimized continuation of [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted) by EclipsedReaper. While the original proved the concept of standalone 1.12.2 CIT loading, it suffered from severe rendering GC stutter, missing OptiFine features, and pack compatibility bugs. 
+---
 
-CIT Reforged addresses these limitations through a comprehensive architectural overhaul:
+## 📖 About the Project
 
-### 1. Zero-Allocation Rendering Architecture (No GC Micro-Stutter)
-- **Original (`CIT-Recrafted`):** Created a new `ItemCacheKey` instance and performed a full deep-copy (`stack.getTagCompound().copy()`) of every item's entire NBT compound on **every single frame** for **every item rendered**. In busy inventories, hotbars, or modpacks with item frames, this produced millions of short-lived objects and continuous garbage collection lag spikes.
-- **Fork (`CIT-Reforged`):** Implements a recyclable `ThreadLocal<ItemCacheKey.LookupKey>` that resets in-place without memory allocation and without cloning NBT. Combined with precomputed hash codes and an LRU rule cache (`ModelCache(500)`), rule matching runs in constant $O(1)$ time with **zero heap churn**.
+**CIT Reforged** is an optimized, active continuation of [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted) originally authored by **EclipsedReaper**. 
 
-### 2. Full Dynamic Bow & Fishing Rod State Support
-- **Original (`CIT-Recrafted`):** Contained zero support for animated sub-models or item states. Custom bows and fishing rods were locked to static models.
-- **Fork (`CIT-Reforged`):** Adds complete support for dynamic item states:
-  - **Bow Pulling Stages:** Evaluates player draw duration in real time to render `texture.bow_pulling_0/1/2` and `model.bow_pulling_0/1/2` (along with `bow_standby`).
-  - **Fishing Rod Cast State:** Checks active player hook entities to dynamically swap between `texture.fishing_rod_cast` and uncast models.
-  - **Perspective Preservation:** Introduces `PerspectiveModelWrapper` so dynamic model overrides maintain accurate First-Person, Third-Person, GUI, and Ground transformations.
+While the original project proved that standalone CIT loading was possible on 1.12.2, it suffered from severe frame allocation churn (NBT cloning every tick), static-only bow/rod states, and pack discovery issues. **CIT Reforged** completely overhauls the internal caching and baking pipelines to deliver seamless OptiFine feature parity at maximum performance.
 
-### 3. Enchanted Book Compatibility (`StoredEnchantments`)
-- **Original (`CIT-Recrafted`):** Only checked the standard `ench` NBT tag. Because Minecraft stores enchanted book enchantments under `StoredEnchantments`, all enchantment-based rules on books failed completely.
-- **Fork (`CIT-Reforged`):** Automatically checks both `ench` (standard gear) and `StoredEnchantments` (enchanted books), restoring full pack functionality for custom enchanted book textures.
+---
 
-### 4. Emissive Textures (`_e.png`) and Animated Metadata (`.mcmeta`)
-- **Original (`CIT-Recrafted`):** Skipped `.mcmeta` animation registration and ignored OptiFine emissive texture conventions.
-- **Fork (`CIT-Reforged`):** Fully registers and proxies `.mcmeta` texture animation descriptors, and automatically registers OptiFine emissive `_e.png` textures so glowing details work seamlessly alongside modern shaders.
+## ✨ Key Features
 
-### 5. Universal Pack Loading & Path Resolution
-- **Original (`CIT-Recrafted`):** Failed to load packs that placed `optifine/cit` or `mcpatcher/cit` directly at the root of the ZIP file (a common pattern in older MCPatcher packs).
-- **Fork (`CIT-Reforged`):** Discovers rules at both the ZIP root and under `assets/minecraft/`. Path resolution handles `~/` expansions, relative paths (`./`), and parent directory traversals (`../`).
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>🚀 Zero-Allocation Rendering</h3>
+      <p>Replaces heavy per-frame memory allocations with recyclable <code>ThreadLocal</code> lookup keys. Caches evaluated rules in an LRU model cache (<code>ModelCache</code>) for instantaneous <b>O(1)</b> lookups.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🏹 Dynamic Bows & Rods</h3>
+      <p>Full animation support! Seamlessly transitions custom bows through drawing stages (<code>pulling_0</code>, <code>pulling_1</code>, <code>pulling_2</code>) and handles fishing rod active/cast models.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>📚 Enchanted Book Support</h3>
+      <p>Natively inspects both standard <code>ench</code> tags and <code>StoredEnchantments</code> tags, allowing custom enchanted books to display their unique reskins based on enchantment and level.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>✨ Emissives & Animations</h3>
+      <p>Registers OptiFine emissive <code>_e.png</code> textures for glowing details with modern shaders, and accurately proxies <code>.mcmeta</code> files for animated items.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <h3>📁 Universal ZIP Pack Discovery</h3>
+      <p>Correctly discovers CIT rules placed at the root of a ZIP pack (legacy MCPatcher style) or nested inside <code>assets/minecraft/</code>, with robust <code>~/</code>, <code>./</code>, and <code>../</code> path resolution.</p>
+    </td>
+    <td width="50%" valign="top">
+      <h3>🧩 Baked Model Deduplication</h3>
+      <p>Shares identical texture and model baking results across rules via <code>bakedCache</code>, drastically cutting initial launch times and saving memory in large packs (e.g. Conquest or John Smith).</p>
+    </td>
+  </tr>
+</table>
 
-### 6. Model Deduplication Cache
-- **Original (`CIT-Recrafted`):** Repeatedly baked separate `IBakedModel` instances for duplicate texture/model declarations across rules.
-- **Fork (`CIT-Reforged`):** Shares a unified model bake cache (`bakedCache`) across all rules, significantly cutting model baking times, memory usage, and VRAM overhead during game launch.
+---
+
+## ⚡ Fork Improvements & Benefits
+
+Here is a detailed breakdown of how **CIT Reforged** improves upon the original [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted) codebase:
+
+### 1. Zero Garbage Collection Stutter
+* **The Issue:** Upstream instantiated a `new ItemCacheKey` and called `stack.getTagCompound().copy()` on **every frame for every rendered item**. In complex scenes with full inventories, modded chests, or item frames, this allocated millions of temporary objects and caused frequent GC freeze frames.
+* **The Solution:** CIT Reforged introduces a static `ThreadLocal<ItemCacheKey.LookupKey>` that resets in-place without memory allocation and without cloning NBT.
+* **Benefit:** Eliminates rendering micro-stutter and lowers heap pressure to near zero.
+
+### 2. Full Dynamic Animation States (Bows & Fishing Rods)
+* **The Issue:** Upstream only handled static item models. Bows and fishing rods never updated when drawn or cast.
+* **The Solution:** CIT Reforged checks player draw duration and active bobber hook state during model evaluation, dynamically swapping into `texture.bow_pulling_0/1/2`, `model.bow_pulling_0/1/2`, or `texture.fishing_rod_cast`.
+* **Perspective Safety:** Wraps models in `PerspectiveModelWrapper` so 3D camera transforms (First Person, Third Person, GUI, Ground, Fixed) are strictly preserved during dynamic state transitions.
+
+### 3. Enchanted Books Compatibility
+* **The Issue:** Upstream inspected only `stack.getTagCompound().getTagList("ench", 10)`. Minecraft stores Enchanted Book data inside `StoredEnchantments`, causing all enchantment-based rules on books to silently fail.
+* **The Solution:** CIT Reforged inspects both `ench` and `StoredEnchantments`.
+
+### 4. OptiFine Emissive Glow & Animation Metadata
+* **The Issue:** Emissive `_e.png` companion textures were skipped during texture stitching, and `.mcmeta` files could fail to load through the proxy pack.
+* **The Solution:** `CITRegistry.registerTexture` automatically registers and proxies all `_e.png` variants and `.mcmeta` descriptors.
+
+### 5. Universal Pack Directory Discovery
+* **The Issue:** Packs placing CIT configuration files directly in the ZIP root (`optifine/cit/...` or `mcpatcher/cit/...`) failed to load because the parser expected a rigid `assets/` structure.
+* **The Solution:** Both `CITParser` and `CITProxyPack` scan and resolve resources from pack roots and nested folders alike.
 
 ---
 
 ## 📊 Comparison Matrix
 
-| Feature / Subsystem | Vanilla / OptiFine 1.12.2 | Original CIT-Recrafted | CIT Reforged (This Fork) |
-| :--- | :---: | :---: | :---: |
-| **Standalone (No OptiFine Required)** | ❌ No | ✅ Yes | ✅ **Yes** |
-| **CleanroomMC & Modern Modpack Support** | ❌ Incompatible / Crash-prone | ✅ Yes | ✅ **Flawless (Forge + Cleanroom)** |
-| **Per-Frame Heap Allocation** | Low | ❌ High (Clones NBT every frame) | ⚡ **Zero-Allocation (ThreadLocal)** |
-| **Rule Matching Evaluation** | Linear scan | Linear scan per frame | ⚡ **$O(1)$ LRU Rule Cache** |
-| **Bow Pulling Animations (0/1/2)** | ✅ Yes | ❌ Not supported | ✅ **Full 3-stage pulling support** |
-| **Fishing Rod Cast State** | ✅ Yes | ❌ Not supported | ✅ **Dynamic cast check** |
-| **Enchanted Books (`StoredEnchantments`)** | ✅ Yes | ❌ Broken | ✅ **Fully Supported** |
-| **Emissive Textures (`_e.png`)** | ✅ Yes | ❌ Ignored | ✅ **Registered & Proxied** |
-| **Animated Textures (`.mcmeta`)** | ✅ Yes | ⚠️ Partial | ✅ **Full support** |
-| **Root-Level ZIP Pack Discovery** | ✅ Yes | ❌ Broken | ✅ **Fixed & Supported** |
-| **Model Bake Deduplication** | ❌ No | ❌ No | ⚡ **Unified Bake Cache** |
+<table>
+  <thead>
+    <tr>
+      <th align="left">Capability / Feature</th>
+      <th align="center">Vanilla / OptiFine 1.12.2</th>
+      <th align="center">Original CIT-Recrafted</th>
+      <th align="center">CIT Reforged (This Fork)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><b>Standalone (No OptiFine)</b></td>
+      <td align="center">❌ No</td>
+      <td align="center">✅ Yes</td>
+      <td align="center">✅ <b>Yes</b></td>
+    </tr>
+    <tr>
+      <td><b>CleanroomMC & Modern Modpack Support</b></td>
+      <td align="center">❌ Crash-prone</td>
+      <td align="center">✅ Supported</td>
+      <td align="center">⚡ <b>Flawless</b></td>
+    </tr>
+    <tr>
+      <td><b>Per-Frame Heap Allocation</b></td>
+      <td align="center">Moderate</td>
+      <td align="center">❌ High (Clones NBT every tick)</td>
+      <td align="center">⚡ <b>Zero-Allocation (ThreadLocal)</b></td>
+    </tr>
+    <tr>
+      <td><b>Rule Evaluation Performance</b></td>
+      <td align="center">Linear Scan</td>
+      <td align="center">Linear scan per frame</td>
+      <td align="center">⚡ <b>O(1) LRU Rule Cache</b></td>
+    </tr>
+    <tr>
+      <td><b>Bow Pulling Animations (0 / 1 / 2)</b></td>
+      <td align="center">✅ Yes</td>
+      <td align="center">❌ Static only</td>
+      <td align="center">✅ <b>Full 3-stage pulling</b></td>
+    </tr>
+    <tr>
+      <td><b>Fishing Rod Cast Models</b></td>
+      <td align="center">✅ Yes</td>
+      <td align="center">❌ Static only</td>
+      <td align="center">✅ <b>Dynamic Hook Check</b></td>
+    </tr>
+    <tr>
+      <td><b>Enchanted Books (<code>StoredEnchantments</code>)</b></td>
+      <td align="center">✅ Yes</td>
+      <td align="center">❌ Broken</td>
+      <td align="center">✅ <b>Fully Supported</b></td>
+    </tr>
+    <tr>
+      <td><b>Emissive Textures (<code>_e.png</code>)</b></td>
+      <td align="center">✅ Yes</td>
+      <td align="center">❌ Ignored</td>
+      <td align="center">✅ <b>Registered & Proxied</b></td>
+    </tr>
+    <tr>
+      <td><b>Animated Textures (<code>.mcmeta</code>)</b></td>
+      <td align="center">✅ Yes</td>
+      <td align="center">⚠️ Partial</td>
+      <td align="center">✅ <b>Full Support</b></td>
+    </tr>
+    <tr>
+      <td><b>Root-Level ZIP Discovery</b></td>
+      <td align="center">✅ Yes</td>
+      <td align="center">❌ Broken</td>
+      <td align="center">✅ <b>Fixed & Auto-Discovered</b></td>
+    </tr>
+    <tr>
+      <td><b>Model Baking Deduplication</b></td>
+      <td align="center">❌ No</td>
+      <td align="center">❌ No</td>
+      <td align="center">⚡ <b>Unified Bake Cache</b></td>
+    </tr>
+  </tbody>
+</table>
 
 ---
 
-## 🛠️ Supported CIT Properties
+## 🛠️ Supported Properties
 
 <details>
 <summary><b>Click to expand full CIT property reference</b></summary>
 
-- `type`: (Required) Currently only the `item` type is supported.
-- `items` / `matchItems`: (Required) Target item ID(s), registry names, or pattern matchers (`regex:`, `iregex:`, `pattern:`, `ipattern:`).
-- `texture` / `tile`: Custom texture path or file name.
-- `model`: Custom JSON model path.
-- `texture.bow_pulling_0/1/2`, `model.bow_pulling_0/1/2`: Bow pulling stages.
-- `texture.bow_standby`, `model.bow_standby`: Bow idle state.
-- `texture.fishing_rod_cast`, `model.fishing_rod_cast`: Fishing rod active state.
-- `damage`: Explicit values, value ranges (e.g., `5-10`), or percentages (e.g., `50%`, `20%-80%`).
-- `damageMask`: Bitwise mask applied to damage values before comparison.
-- `stackSize`: Item count matching with support for ranges.
-- `enchantments` / `enchantmentIDs`: Enchantment name or ID (works on gear and Enchanted Books).
-- `enchantmentLevels`: Matching specific enchantment tiers and ranges.
-- `nbt.<path>`: Deep NBT inspection with list wildcards (`*`) and regex matching.
-- `weight`: Priority evaluation for overlapping rules.
+<br />
 
-See the [OptiFine CIT documentation](https://optifine.readthedocs.io/cit.html) for property syntax details.
+| Property | Description | Example |
+| :--- | :--- | :--- |
+| `type` | Rule target type (currently `item`). | `type=item` |
+| `items` / `matchItems` | Target item names, IDs, or pattern matchers. | `items=diamond_sword pattern:*_axe` |
+| `texture` / `tile` | Custom texture path or filename. | `texture=ruby_sword.png` |
+| `model` | Custom JSON model path. | `model=models/item/ruby_sword.json` |
+| `texture.bow_pulling_0/1/2` | Bow draw stage textures. | `texture.bow_pulling_0=bow_pull_0.png` |
+| `model.bow_pulling_0/1/2` | Bow draw stage 3D models. | `model.bow_pulling_0=bow_pull_0.json` |
+| `texture.bow_standby` | Bow idle texture. | `texture.bow_standby=bow_standby.png` |
+| `texture.fishing_rod_cast` | Cast fishing rod texture. | `texture.fishing_rod_cast=rod_cast.png` |
+| `damage` | Damage values, value ranges, or percentages. | `damage=0-50` or `damage=75%` |
+| `damageMask` | Bitwise mask applied to damage values. | `damageMask=15` |
+| `stackSize` | Item count in stack, supports ranges. | `stackSize=1-16` |
+| `enchantments` | Enchantment names or numeric IDs. | `enchantments=sharpness fire_aspect` |
+| `enchantmentLevels` | Enchantment level matching with ranges. | `enchantmentLevels=1-3` |
+| `nbt.<path>` | Deep NBT inspection with regex and wildcards. | `nbt.display.Name=regex:(?i)Excalibur` |
+| `weight` | Rule priority over other matches. | `weight=10` |
+
+Refer to the official [OptiFine CIT Documentation](https://optifine.readthedocs.io/cit.html) for full property syntax specifications.
 
 </details>
 
 ---
 
-## 📋 Requirements & Installation
+## 📥 Installation
 
-### Requirements
-- **Minecraft:** 1.12.2
-- **Modloader:** Minecraft Forge (`14.23.5.2847`+) or CleanroomMC (`0.6.x`+)
-- **Environment:** Client-side only (not required on dedicated servers)
-- **Java:** Java 8 runtime for playing
+1. Ensure **Minecraft 1.12.2** is installed with either:
+   - **Minecraft Forge** (`14.23.5.2847` or newer)
+   - **CleanroomMC** (`0.6.x` or newer)
+2. Download `cit_reforged-1.0.0.jar` from [Releases](https://github.com/Brilliafy/CITReforged/releases).
+3. Place the `.jar` into your `.minecraft/mods` directory.
+4. Drop your CIT resource packs into `.minecraft/resourcepacks` and enable them in-game.
 
-### Installation
-1. Install Minecraft Forge or CleanroomMC for 1.12.2.
-2. Download `cit_reforged-1.0.0.jar` and place it into your `.minecraft/mods` folder.
-3. Place any CIT-compatible resource pack in your `.minecraft/resourcepacks` folder and enable it in-game.
+> [!TIP]
+> CIT Reforged is a client-side mod. It does **not** need to be installed on dedicated servers.
 
 ---
 
 ## 🔨 Building from Source
 
-The build compiles modern Java syntax using Jabel to produce Java 8 compatible bytecode:
+This project targets Java 8 bytecode using Jabel to compile modern Java syntax. A JDK 17+ or JDK 25 environment is recommended for building:
 
 ```bash
+# Clone the repository
+git clone https://github.com/Brilliafy/CITReforged.git
+cd CITReforged
+
+# Build the project
 ./gradlew build
 ```
 
-The resulting mod jar is output to `build/libs/cit_reforged-1.0.0.jar`.
+The compiled mod jar will be located at `build/libs/cit_reforged-1.0.0.jar`.
 
 ---
 
-## 📜 Credits & License
+## 🤝 Credits & Acknowledgments
 
-**CIT Reforged** is released under the **MIT License**.
+**CIT Reforged** is proudly open-source under the **MIT License**.
 
-- **Original Author:** [EclipsedReaper](https://github.com/EclipsedReaper) for creating [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted).
-- **Fork Maintainer:** [Brilliafy](https://github.com/Brilliafy) for performance optimizations, dynamic model additions, compatibility fixes, and maintenance.
-- **Upstream Repository:** [https://github.com/EclipsedReaper/CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted)
-- **Fork Repository:** [https://github.com/Brilliafy/CITReforged](https://github.com/Brilliafy/CITReforged)
+* **Original Creator:** Massive credit to [EclipsedReaper](https://github.com/EclipsedReaper) for designing the original [CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted) mod and proving the concept of standalone 1.12.2 CIT parsing.
+* **Fork Maintainer:** [Brilliafy](https://github.com/Brilliafy) — performance architecture, zero-allocation memory pipeline, dynamic animations, bug fixes, and maintenance.
+* **Upstream Repository:** [https://github.com/EclipsedReaper/CIT-Recrafted](https://github.com/EclipsedReaper/CIT-Recrafted)
+* **Fork Repository:** [https://github.com/Brilliafy/CITReforged](https://github.com/Brilliafy/CITReforged)
 
-See the [LICENSE](LICENSE) file for complete copyright and license details.
+<div align="center">
+  <sub>MIT License © 2026 EclipsedReaper & Brilliafy</sub>
+</div>
