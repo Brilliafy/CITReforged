@@ -1,3 +1,9 @@
+> [!WARNING]
+> ### PROJECT UNMAINTAINED / ON INDEFINITE HIATUS
+> **This project is no longer actively maintained and is on indefinite hiatus.**
+> No further updates, feature additions, or bug fixes will be provided. The repository is archived and read-only. Anyone is welcome to fork this project and continue development under the terms of the open-source license.
+
+
 <div align="center">
 
   <img src="logo.png" alt="CIT Reforged Logo" width="160" />
